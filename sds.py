@@ -18,7 +18,7 @@ compound_name = st.text_input("Masukkan nama senyawa (misal: Acetone):")
 # Fungsi ambil data
 def fetch_pubchem_data(compound):
     try:
-        # Step 1: Cari CID berdasarkan nama senyawa
+        # Step 1: Cari CID
         cid_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{compound}/cids/JSON"
         cid_response = requests.get(cid_url)
         cid_response.raise_for_status()
@@ -29,15 +29,20 @@ def fetch_pubchem_data(compound):
             return None
         cid = cids[0]
 
-        # Step 2: Ambil data hazard dari CID
+        # Step 2: Ambil data PUG View
         data_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/cid/{cid}/JSON"
         data_response = requests.get(data_url)
+
+        # Jika gagal karena 400 (BadRequest), tangani
+        if data_response.status_code == 400:
+            st.warning("Data GHS Classification tidak tersedia untuk senyawa ini.")
+            return None
+
         data_response.raise_for_status()
         return data_response.json()
     except Exception as e:
         st.error(f"Gagal mengambil data dari PubChem: {str(e)}")
         return None
-
 
 # Fungsi interpretasi data
 def interpret_hazards(compound_data):
