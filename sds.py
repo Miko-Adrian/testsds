@@ -1,59 +1,93 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="PubChem GHS Classification", page_icon="🧪", layout="centered")
+# Konfigurasi halaman
+st.set_page_config(page_title="Informasi Bahan Kimia dari PubChem", layout="wide")
+st.title("🧪 Informasi Bahan Kimia dari PubChem")
 
-st.title("🔬 GHS Classification dari PubChem")
-compound = st.text_input("Masukkan nama senyawa:", "acetone")
-
-def get_cid(compound_name):
-    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{compound_name}/cids/JSON"
-    response = requests.get(url)
-    response.raise_for_status()
-    data = response.json()
-    cids = data.get("IdentifierList", {}).get("CID", [])
-    return cids[0] if cids else None
-
-def get_ghs_classification(cid):
-    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/record/JSON"
-    response = requests.get(url)
-    response.raise_for_status()
-    data = response.json()
-
-    def search_section(sections):
-        for section in sections:
-            if section.get("TOCHeading") == "GHS Classification":
-                return section
-            if "Section" in section:
-                result = search_section(section["Section"])
-                if result:
-                    return result
-        return None
-
-    root_sections = data.get("Record", {}).get("Section", [])
-    return search_section(root_sections)
-
-def extract_ghs_info(ghs_section):
-    if not ghs_section:
-        return "⚠️ Data GHS Classification tidak tersedia untuk senyawa ini."
-
-    result_lines = []
-    for info in ghs_section.get("Information", []):
-        title = info.get("Name", "Informasi")
-        value_text = ""
-        if "Value" in info and "StringWithMarkup" in info["Value"]:
-            value_text = "\n".join([s["String"] for s in info["Value"]["StringWithMarkup"]])
-        result_lines.append(f"**{title}**\n{value_text}")
-    return "\n\n".join(result_lines)
+# Input senyawa
+compound_name = st.text_input("Masukkan nama senyawa:", "formaldehyde")
 
 if st.button("Cari Data"):
-    try:
-        cid = get_cid(compound)
-        if cid:
-            ghs_section = get_ghs_classification(cid)
-            result = extract_ghs_info(ghs_section)
-            st.markdown(f"### 🧾 Hasil untuk: `{compound}`\n{result}")
-        else:
-            st.warning("❌ CID tidak ditemukan untuk senyawa ini.")
-    except requests.exceptions.RequestException as e:
-        st.error(f"❌ Gagal mengambil data: {e}")
+    with st.spinner("Mengambil data..."):
+        try:
+            # Step 1: Ambil CID
+            cid_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{compound_name}/cids/JSON"
+            cid = requests.get(cid_url).json()['IdentifierList']['CID'][0]
+
+            # Step 2: Ambil record
+            url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/record/JSON"
+            data = requests.get(url).json()
+
+            def find_section(sections, heading):
+                for sec in sections:
+                    if sec.get("TOCHeading") == heading:
+                        return sec
+                    if "Section" in sec:
+                        result = find_section(sec["Section"], heading)
+                        if result:
+                            return result
+                return None
+
+            root_sections = data["Record"]["Section"]
+            safety = find_section(root_sections, "Safety and Hazards")
+
+            # --- GHS Section ---
+            ghs = find_section(safety["Section"], "GHS Classification") if safety else None
+            st.subheader("⚠️ GHS Classification")
+            if ghs:
+                for info in ghs.get("Information", []):
+                    if info.get("Name") == "Pictogram(s)":
+                        for url in info["Value"]["ExternalDataURL"]:
+                            st.image(url, width=100)
+                    elif info.get("Name") == "Signal Word":
+                        st.markdown(f"**Signal Word:** {info['Value']['StringWithMarkup'][0]['String']}")
+                    elif info.get("Name") == "Hazard Statements":
+                        st.markdown("**Hazard Statements:**")
+                        for h in info["Value"]["StringWithMarkup"]:
+                            st.write(f"- {h['String']}")
+            else:
+                st.warning("Data GHS tidak ditemukan.")
+
+            # --- First Aid ---
+            faid = find_section(safety["Section"], "First Aid Measures") if safety else None
+            st.subheader("🩺 First Aid Measures")
+            if faid:
+                for info in faid.get("Information", []):
+                    for val in info.get("Value", {}).get("StringWithMarkup", []):
+                        st.write(f"- {val['String']}")
+            else:
+                st.warning("Data First Aid tidak tersedia.")
+
+            # --- Firefighting Measures ---
+            fire = find_section(safety["Section"], "Fire Fighting Measures") if safety else None
+            st.subheader("🔥 Fire Fighting Measures")
+            if fire:
+                for info in fire.get("Information", []):
+                    for val in info.get("Value", {}).get("StringWithMarkup", []):
+                        st.write(f"- {val['String']}")
+            else:
+                st.warning("Data Fire Fighting tidak tersedia.")
+
+            # --- Stability and Reactivity ---
+            stab = find_section(safety["Section"], "Stability and Reactivity") if safety else None
+            st.subheader("⚗️ Stability and Reactivity")
+            if stab:
+                for info in stab.get("Information", []):
+                    for val in info.get("Value", {}).get("StringWithMarkup", []):
+                        st.write(f"- {val['String']}")
+            else:
+                st.warning("Data Stability and Reactivity tidak tersedia.")
+
+            # --- PPE (Personal Protection) ---
+            exposure = find_section(safety["Section"], "Exposure Controls / Personal Protection") if safety else None
+            st.subheader("🧤 PPE / Personal Protection")
+            if exposure:
+                for info in exposure.get("Information", []):
+                    for val in info.get("Value", {}).get("StringWithMarkup", []):
+                        st.write(f"- {val['String']}")
+            else:
+                st.warning("Data PPE tidak tersedia.")
+
+        except Exception as e:
+            st.error(f"Terjadi kesalahan: {e}")
