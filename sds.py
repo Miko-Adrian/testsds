@@ -44,32 +44,22 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def get_pubchem_data(chemical_name):
-    """Fetch chemical data from PubChem API"""
+    """Ambil data dari PubChem PUG View untuk keperluan SDS"""
     try:
-        # Step 1: Get CID
+        # Step 1: Get CID dari nama bahan kimia
         cid_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{chemical_name}/cids/JSON"
-        response = requests.get(cid_url)
-        if response.status_code == 200:
-            cid = response.json()['IdentifierList']['CID'][0]
+        res = requests.get(cid_url)
+        res.raise_for_status()
+        cid = res.json()['IdentifierList']['CID'][0]
 
-            # Step 2: Get compound data using CID
-            compound_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/{cid}/JSON"
-            compound_response = requests.get(compound_url)
-            if compound_response.status_code == 200:
-                return {
-                    'success': True,
-                    'data': compound_response.json()
-                }
-            else:
-                return {
-                    'success': False,
-                    'error': "Gagal mengambil detail senyawa dari PubChem"
-                }
-        else:
-            return {
-                'success': False,
-                'error': "CID tidak ditemukan untuk bahan kimia tersebut"
-            }
+        # Step 2: Get PUG View data (berisi GHS / SDS)
+        data_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/{cid}/JSON"
+        data_res = requests.get(data_url)
+        data_res.raise_for_status()
+        return {
+            'success': True,
+            'data': data_res.json()
+        }
     except Exception as e:
         return {
             'success': False,
