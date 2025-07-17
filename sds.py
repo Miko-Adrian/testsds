@@ -67,32 +67,23 @@ def get_pubchem_data(chemical_name):
         }
 
 def interpret_hazards(compound_data):
-    """Interpret hazard information from PubChem data"""
-    hazards = []
-    
-    try:
-        # Check for GHS Hazard Codes
-        if 'PC_Compounds' in compound_data:
-            compound = compound_data['PC_Compounds'][0]
-            
-            # Get GHS information if available
-            if 'coords' in compound and isinstance(compound['coords'], list):
-                for coord in compound['coords']:
-                    if 'type' in coord and coord['type'] == 2:  # GHS Hazard Codes
-                        hazards.append(coord['aid'])
-            
-            # Interpret common hazards based on PubChem data
-            if 'props' in compound:
-                for prop in compound['props']:
-                    if 'urn' in prop and 'label' in prop['urn']:
-                        if 'Hazard Statements' in prop['urn']['label']:
-                            hazard_statements = prop['value']['sval']
-                            hazards.extend(hazard_statements.split(';'))
-    
-    except Exception as e:
-        st.warning(f"Error interpreting hazards: {str(e)}")
-    
-    return hazards
+"""Extract hazard codes from PubChem PUG View JSON (Record format)"""
+hazards = []
+try:
+sections = compound_data.get("Record", {}).get("Section", [])
+for section in sections:
+if section.get("TOCHeading") == "Safety and Hazards":
+for subsec in section.get("Section", []):
+if subsec.get("TOCHeading") == "GHS Classification":
+for info in subsec.get("Information", []):
+string_data = info.get("Value", {}).get("StringWithMarkup", [])
+for item in string_data:
+text = item.get("String", "")
+if text.startswith("H"):
+code = text.split(":")[0].strip()
+hazards.append(code)
+except Exception as e:
+st.warning(f"Gagal membaca informasi hazard: {str(e)}")
 
 def hazard_to_symbol(hazard_code):
     """Convert hazard code to symbol and description"""
