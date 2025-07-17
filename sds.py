@@ -17,14 +17,27 @@ compound_name = st.text_input("Masukkan nama senyawa (misal: Acetone):")
 
 # Fungsi ambil data
 def fetch_pubchem_data(compound):
-    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/name/{compound}/JSON"
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
+        # Step 1: Cari CID berdasarkan nama senyawa
+        cid_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{compound}/cids/JSON"
+        cid_response = requests.get(cid_url)
+        cid_response.raise_for_status()
+        cid_data = cid_response.json()
+        cids = cid_data.get("IdentifierList", {}).get("CID", [])
+        if not cids:
+            st.error("CID tidak ditemukan untuk senyawa tersebut.")
+            return None
+        cid = cids[0]
+
+        # Step 2: Ambil data hazard dari CID
+        data_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/cid/{cid}/JSON"
+        data_response = requests.get(data_url)
+        data_response.raise_for_status()
+        return data_response.json()
     except Exception as e:
         st.error(f"Gagal mengambil data dari PubChem: {str(e)}")
         return None
+
 
 # Fungsi interpretasi data
 def interpret_hazards(compound_data):
