@@ -15,19 +15,17 @@ if st.button("Cari Data"):
             cid_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{compound_name}/cids/JSON"
             cid = requests.get(cid_url).json()['IdentifierList']['CID'][0]
 
-            # Step 2: Ambil record
-            url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/record/JSON"
-            data = requests.get(url).json()
+         # Step 2: Ambil record
+url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/record/JSON"
+response = requests.get(url)
+record_data = response.json()
 
-            def find_section(sections, heading):
-                for sec in sections:
-                    if sec.get("TOCHeading") == heading:
-                        return sec
-                    if "Section" in sec:
-                        result = find_section(sec["Section"], heading)
-                        if result:
-                            return result
-                return None
+if "Record" not in record_data:
+    st.error("❌ Data record tidak ditemukan untuk senyawa ini. Mungkin senyawanya tidak memiliki data keamanan di PubChem.")
+else:
+    data = record_data
+    # lanjutkan proses seperti biasa di sini
+    ...
 
             root_sections = data["Record"]["Section"]
             safety = find_section(root_sections, "Safety and Hazards")
