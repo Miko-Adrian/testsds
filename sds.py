@@ -45,34 +45,30 @@ st.markdown("""
 
 def get_pubchem_data(chemical_name):
     """Fetch chemical data from PubChem API"""
-    base_url = "https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/180/JSON"
-    m
-    # First get CID (Compound ID)
-    cid_url = f"{base_url}/compound/name/{chemical_name}/cids/JSON"
     try:
+        # Step 1: Get CID
+        cid_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{chemical_name}/cids/JSON"
         response = requests.get(cid_url)
         if response.status_code == 200:
             cid = response.json()['IdentifierList']['CID'][0]
-            
-            # Get compound information
-            compound_url = f"{base_url}/compound/cid/{cid}/JSON"
+
+            # Step 2: Get compound data using CID
+            compound_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/{cid}/JSON"
             compound_response = requests.get(compound_url)
-            
             if compound_response.status_code == 200:
-                compound_data = compound_response.json()
                 return {
                     'success': True,
-                    'data': compound_data
+                    'data': compound_response.json()
                 }
             else:
                 return {
                     'success': False,
-                    'error': "Failed to fetch compound details"
+                    'error': "Gagal mengambil detail senyawa dari PubChem"
                 }
         else:
             return {
                 'success': False,
-                'error': "Chemical not found or error in PubChem API"
+                'error': "CID tidak ditemukan untuk bahan kimia tersebut"
             }
     except Exception as e:
         return {
