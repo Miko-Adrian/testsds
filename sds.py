@@ -391,5 +391,5 @@ def main():
         4. Simpan atau cetak hasil untuk referensi
         """)
 
-if _name_ == "_main_":
+if __name__ == "_main_":
     main()
