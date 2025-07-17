@@ -10,12 +10,8 @@
               {
                 "Value": {
                   "StringWithMarkup": [
-                    {
-                      "String": "https://pubchem.ncbi.nlm.nih.gov/image/imgsrv.fcgi?cid=<CID>&imgid=ghs06"
-                    },
-                    {
-                      "String": "https://pubchem.ncbi.nlm.nih.gov/image/imgsrv.fcgi?cid=<CID>&imgid=ghs08"
-                    }
+                    { "String": "https://pubchem.ncbi.nlm.nih.gov/image/imgsrv.fcgi?cid=180&imgid=flame" },
+                    { "String": "https://pubchem.ncbi.nlm.nih.gov/image/imgsrv.fcgi?cid=180&imgid=exclamation" }
                   ]
                 }
               }
@@ -27,15 +23,8 @@
               {
                 "Value": {
                   "StringWithMarkup": [
-                    {
-                      "String": "If inhaled: Remove victim to fresh air and keep at rest in a position comfortable for breathing."
-                    },
-                    {
-                      "String": "If on skin: Wash with plenty of soap and water."
-                    },
-                    {
-                      "String": "If in eyes: Rinse cautiously with water for several minutes."
-                    }
+                    { "String": "If inhaled: Remove person to fresh air." },
+                    { "String": "If on skin: Wash with water." }
                   ]
                 }
               }
