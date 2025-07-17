@@ -67,23 +67,24 @@ def get_pubchem_data(chemical_name):
         }
 
 def interpret_hazards(compound_data):
-"""Extract hazard codes from PubChem PUG View JSON (Record format)"""
-hazards = []
-try:
-sections = compound_data.get("Record", {}).get("Section", [])
-for section in sections:
-if section.get("TOCHeading") == "Safety and Hazards":
-for subsec in section.get("Section", []):
-if subsec.get("TOCHeading") == "GHS Classification":
-for info in subsec.get("Information", []):
-string_data = info.get("Value", {}).get("StringWithMarkup", [])
-for item in string_data:
-text = item.get("String", "")
-if text.startswith("H"):
-code = text.split(":")[0].strip()
-hazards.append(code)
-except Exception as e:
-st.warning(f"Gagal membaca informasi hazard: {str(e)}")
+    """Extract hazard codes from PubChem PUG View JSON (Record format)"""
+    hazards = []
+    try:
+        sections = compound_data.get("Record", {}).get("Section", [])
+        for section in sections:
+            if section.get("TOCHeading") == "Safety and Hazards":
+                for subsec in section.get("Section", []):
+                    if subsec.get("TOCHeading") == "GHS Classification":
+                        for info in subsec.get("Information", []):
+                            string_data = info.get("Value", {}).get("StringWithMarkup", [])
+                            for item in string_data:
+                                text = item.get("String", "")
+                                if text.startswith("H"):
+                                    code = text.split(":")[0].strip()
+                                    hazards.append(code)
+    except Exception as e:
+        st.warning(f"Gagal membaca informasi hazard: {str(e)}")
+    return hazards
 
 def hazard_to_symbol(hazard_code):
     """Convert hazard code to symbol and description"""
@@ -164,9 +165,20 @@ def get_ppe_recommendations(hazards):
     })
     
     # Add PPE based on specific hazards
-    for hazard in hazards:
-        if isinstance(hazard, str):
-            hazard_code = hazard.split(':')[0] if ':' in hazard else hazard
+   for i, hazard in enumerate(hazards):
+    if isinstance(hazard, str):
+        hazard_code = hazard.split(':')[0] if ':' in hazard else hazard
+        if hazard_code not in unique_hazards:
+            unique_hazards.add(hazard_code)
+            hazard_info = hazard_to_symbol(hazard_code)
+            with cols[i % 4]:
+                st.markdown(f"""
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 24px; margin-right: 10px;">{hazard_info['symbol']}</span>
+                    <span>{hazard_info['name']}</span>
+                </div>
+                """, unsafe_allow_html=True)
+
             
             if hazard_code in ['H300', 'H301', 'H302', 'H304', 'H310', 'H311', 'H312', 'H330', 'H331', 'H332']:
                 ppe_recommendations.append({
